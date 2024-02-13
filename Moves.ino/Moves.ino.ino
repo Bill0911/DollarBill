@@ -10,6 +10,9 @@ const int motorPin4 = 9;   // Motor 2 control pin
 const int trigPin = 2; // Connect Trig to digital pin 2
 const int echoPin = 7; // Connect Echo to digital pin 7
 
+const int sensorCount = 8; // Number of sensors in your analog line sensor
+const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7}; // Analog sensor pins
+
 void setup() {
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
@@ -19,13 +22,14 @@ void setup() {
   gripperServo.attach(4);  // Attach the servo to the specified pin
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+
+  Serial.begin(9600); // Initialize serial communication for debugging
 }
 
 void loop() {
-  // Read the distance to the object
+  int sensorValues[sensorCount];
   int distance = getDistance();
-
-  // If the distance is greater than 10 cm, move forward
+  //If the distance os greater than 10 cm, move forward
   if (distance > 10) {
     moveForward();
   } else {
@@ -46,8 +50,31 @@ void loop() {
     // Wait for a moment (you can adjust the delay)
     delay(2000);
   }
-}
+  
+  // Read sensor values
+  for (int i = 0; i < sensorCount; ++i) {
+    sensorValues[i] = analogRead(sensorPins[i]);
+  }
 
+  // Print sensor values to Serial Monitor
+  Serial.print("Sensor Values: ");
+  for (int i = 0; i < sensorCount; ++i) {
+    Serial.print(sensorValues[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+
+  // Your line following logic goes here
+  // Example: Move forward if the middle sensor reads a high value
+  if (sensorValues[sensorCount / 2] > 500) {
+    moveForward();
+  } else {
+    stopRobot();
+    // Add more logic for turning or adjusting based on sensor values
+  }
+
+  delay(200); // Adjust delay based on your requirements
+}
 int getDistance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -56,15 +83,14 @@ int getDistance() {
   digitalWrite(trigPin, LOW);
   return pulseIn(echoPin, HIGH) * 0.034 / 2;
 }
-
 void moveForward() {
   // Your existing motor control logic goes here
-  // Example: Move forward at a moderate speed
+  // Example: Move forward
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, HIGH);
   digitalWrite(motorPin4, LOW);
-  delay(30);  // Adjust the delay for the desired speed
+  delay(30); //Adjust the delay for the desired speed
 }
 
 void stopRobot() {
@@ -75,6 +101,6 @@ void stopRobot() {
   digitalWrite(motorPin4, LOW);
 }
 
-void moveGripper(int angle) {
-  gripperServo.write(angle);  // Adjust the angle to move the gripper
+void moveGripper(int angle){
+  gripperServo.write(angle); // Adjust the angle to move the gripper
 }
