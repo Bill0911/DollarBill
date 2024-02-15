@@ -66,7 +66,7 @@ void loop() {
 
   // Your line following logic goes here
   // Example: Move forward if the middle sensor reads a high value
-  if (sensorValues[sensorCount / 2] > 500) {
+  if (sensorValues[sensorCount / 2] > 450) {
     moveForward();
   } else {
     stopRobot();
@@ -103,4 +103,24 @@ void stopRobot() {
 
 void moveGripper(int angle){
   gripperServo.write(angle); // Adjust the angle to move the gripper
+}
+
+const int initialSpeed = 255; //Set the initial motor speed
+
+void reduceSpeed(){
+  static int currentSpeed = initialSpeed; // Initialize the current speed
+
+  //Gradually reduce speed (you can adjust the decrement value)
+  currentSpeed -= 10;
+
+  //Ensure speed does not go below a minimumValue
+  if(currentSpeed < 50){
+    currentSpeed = 50;
+  }
+
+  //Apply the reduced speed to the motors
+  analogWrite(motorPin1, currentSpeed);
+  analogWrite(motorPin2, 0); //Assuming motorPin2 is the correspond pin for the first motor
+  analogWrite(motorPin3, currentSpeed);
+  analogWrite(motorPin4, 0); //Assuming motorPin4 is the correspond pin for the second motor
 }
