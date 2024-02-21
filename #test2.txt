@@ -1,6 +1,6 @@
-//#include <Servo.h>
+#include <Servo.h>
 
-//Servo gripperServo;  // Create a servo object to control the gripper
+Servo gripperServo;  // Create a servo object to control the gripper
 
 const int motorPin1 = 3;   // Motor 1 control pin
 const int motorPin2 = 5;   // Motor 1 control pin
@@ -11,7 +11,7 @@ const int trigPin = 2; // Connect Trig to digital pin 2
 const int echoPin = 7; // Connect Echo to digital pin 7
 
 const int sensorCount = 8; // Number of sensors in your analog line sensor
-const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7}; // Analog sensor pins
+const int sensorPins[sensorCount] = {A0, A1, A2, A3, A4, A5, A6, A7}; // Analog sensor pins
 
 void setup() {
   pinMode(motorPin1, OUTPUT);
@@ -19,10 +19,12 @@ void setup() {
   pinMode(motorPin3, OUTPUT);
   pinMode(motorPin4, OUTPUT);
 
-  //gripperServo.attach(4);  // Attach the servo to the specified pin
+  gripperServo.attach(4);  // Attach the servo to the specified pin
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-
+   for (int i = 0; i < sensorCount; i++) {
+    pinMode(sensorPins[i], INPUT);
+  }
   Serial.begin(9600); // Initialize serial communication for debugging
 }
 
@@ -64,15 +66,16 @@ void loop() {
   }
   Serial.println();
   int error = calculateError(sensorValues);
-if (sensorPins[3] > 700 && sensorPins[4] > 700){
+if(sensorPins[A3] > 700 && sensorPins[A4] > 700){
       moveForward();
-    } else {
-      if (sensorPins[0] > 700 && sensorPins[1] > 700){
-        moveLeft();
-      } else if (sensorPins[7] > 700 && sensorPins[8] > 700){
-        moveRight();
-      }
+  }else if(sensorPins[A0] > 700 && sensorPins[A1] > 700){
+      moveLeft();
+  }else if(sensorPins[A6] > 700 && sensorPins[A7] > 700){
+      moveRight();
+  }else{
+      stopRobot();
     }
+    
   // Your line following logic goes here
   // Example: Move forward if the middle sensor reads a high value
  
@@ -108,11 +111,11 @@ int getDistance() {
 void moveForward() {
   // Your existing motor control logic goes here
   // Example: Move forward
-  digitalWrite(motorPin1, HIGH);
+  analogWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
-  digitalWrite(motorPin3, HIGH);
+  analogWrite(motorPin3, HIGH);
   digitalWrite(motorPin4, LOW);
-  delay(20); //Adjust the delay for the desired speed
+  
 }
 
 void stopRobot() {
