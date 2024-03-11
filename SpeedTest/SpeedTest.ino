@@ -3,7 +3,7 @@ const int motorPin2 = 5;
 const int motorPin3 = 6;
 const int motorPin4 = 9;
 
-void setup(){
+void setup() {
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
   pinMode(motorPin3, OUTPUT);
@@ -12,28 +12,48 @@ void setup(){
   Serial.begin(9600);
 }
 
-void moveForward(){
-  analogWrite (motorPin1, HIGH);
-  digitalWrite(motorPin2, LOW);
-  analogWrite (motorPin3, HIGH);
-  digitalWrite(motorPin4, LOW);
+void moveForward() {
+  for (int speed = 0; speed <= 255; speed += 10) {
+    analogWrite(motorPin1, speed);
+    analogWrite(motorPin3, speed);
 
-  Serial.print("Speed forward: ");
-  Serial.println(analogRead(motorPin1));
-  Serial.println(analogRead(motorPin2));
+    Serial.print("Speed forward - Motor 1: ");
+    Serial.println(speed);
+
+    Serial.print("Speed forward - Motor 2: ");
+    Serial.println(speed);
+
+    delay(500);  // Adjust the delay as needed for observation
+  }
+
+  // Stop the motors after the test
+  analogWrite(motorPin1, 0);
+  analogWrite(motorPin3, 0);
 }
 
-void moveBackwards(){
-  digitalWrite(motorPin1, LOW);
-  analogWrite (motorPin2, HIGH);
-  digitalWrite(motorPin3, LOW);
-  analogWrite (motorPin4, HIGH);
+void moveBackwards() {
+  for (int speed = 0; speed <= 255; speed += 10) {
+    analogWrite(motorPin2, speed);
+    analogWrite(motorPin4, speed);
 
-  Serial.print("Speed backward: ");
-  Serial.println(analogRead(motorPin2));
-  Serial.println(analogRead(motorPin4));
+    Serial.print("Speed backward - Motor 1: ");
+    Serial.println(speed);
+
+    Serial.print("Speed backward - Motor 2: ");
+    Serial.println(speed);
+
+    delay(500);  // Adjust the delay as needed for observation
+  }
+
+  // Stop the motors after the test
+  analogWrite(motorPin2, 0);
+  analogWrite(motorPin4, 0);
 }
 
-void loop(){
+void loop() {
   moveForward();
+  delay(1000); // Adjust the delay as needed
+
+  moveBackwards();
+  delay(1000); // Adjust the delay as needed
 }

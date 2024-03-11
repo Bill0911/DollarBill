@@ -93,6 +93,7 @@ void moveForward() {
   analogWrite (motorPin3, 200);
   digitalWrite(motorPin4, LOW);
 }
+
 void lightForward(){
   pixels.setPixelColor(1, pixels.Color(0, 0, 0)); // 
   pixels.setPixelColor(2, pixels.Color(155, 255, 0)); // 
@@ -119,9 +120,9 @@ void turnRight() {
   analogWrite (motorPin1, 130);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
-  digitalWrite(motorPin4, 100);
+  analogWrite(motorPin4, 100);
 }
-void lightTRight(){
+void lightRight(){
   pixels.setPixelColor(1, pixels.Color(155, 255, 0)); // 
   pixels.setPixelColor(2, pixels.Color(155, 255, 0)); //
   pixels.setPixelColor(3, pixels.Color(0, 0, 0)); //  
@@ -211,7 +212,8 @@ void loop() {
   if(raceEnded) {
     lightStop();
     stopRobot();
-  } else if(isBlack) {
+  }
+  else if(isBlack) {
     lightBackwards();
     moveBackwards();
     delay(325);
