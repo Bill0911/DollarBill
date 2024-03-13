@@ -6,6 +6,11 @@
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 unsigned long startTime = 0;  // Variable to store the start time of the timer
+unsigned long timePassed = 0; //this happends as it never blink before. That's why blinking time did not pass
+unsigned long timeNow = millis(); //Now it holds the actual current time before blinking
+unsigned long delayNeverDie = 0; //this should be 0 as it does not have any delay before celebrate1 is to be performed
+int celebrationStep = 0; //We defined this on as it keeps track of following blinks;
+
 bool timerStarted = false;    // Flag to indicate if the timer has started
 bool raceStarted = false;     // Flag to indicate if the robot should start or not
 bool raceEnded = false;
@@ -29,7 +34,7 @@ const int sensorCount = 8; // Number of sensors in your analog line sensor
 const int sensorPins[sensorCount] = {A0, A1, A2, A3, A4, A5, A6, A7}; // Analog sensor pins
 int sensorValues[sensorCount]; // Array to store sensor values
 
-#define BLACK 900 // defines the treshold of when we say the colour sensor senses the colour black
+#define BLACK 900 // defines the threshold of when we say the colour sensor senses the colour black
 
 void setup() {
   pinMode(motorPin1, OUTPUT);
@@ -246,15 +251,37 @@ void loop() {
   
   
   if(raceEnded) {
-    lightStop();
-    delay(3000);
-    celebrate1();
-    delay(200);
-    celebrate2();
-    delay(200);
-    celebrate3();
-    delay(200);
-    stopRobot();
+    if(timeNow - timePassed >= delayNeverDie){// This condition is satisfied as zero is greater or equal to 0 (delayNeverDie is initially set to 0)
+      timePassed = timeNow; //the action is executed, and timePassed is updated to timeNow
+     switch (celebrationStep){
+      case 0:
+        lightStop();
+        delayNeverDie = 3000;
+        break;
+      case 1:
+        celebrate1();
+        delayNeverDie = 200;
+        break;
+      case 2:
+        celebrate2();
+        delayNeverDie = 200;
+        break;
+      case 3:
+        celebrate3();
+        delayNeverDie = 200;
+        break;
+      case 4:
+        celebrate4();
+        delayNeverDie = 200;
+        break;
+      case 5:
+        stopRobot();
+        break;
+     //On the following loops, timePassed - timeNow will be the time elapsed since the last action
+     //If this elapsed time is greater or equal to 0 to delayNeverDie, the condition is satisfied again
+     }
+    celebrationStep++;
+   }
   } else if(isBlack) {
     lightBackwards();
     moveBackwards();

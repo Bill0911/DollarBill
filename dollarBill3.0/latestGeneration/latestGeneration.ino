@@ -1,4 +1,4 @@
-#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h> // neopixel library
 
 #define PIN 13        // Digital pin Neopixels
 #define NUM_PIXELS 4  // Number of Neopixels
@@ -11,8 +11,9 @@ bool raceStarted = false;     // Flag to indicate if the robot should start or n
 bool raceEnded = false;
 bool isWhite = false;
 bool isBlack = false;
-bool isTesting = false;
-bool destroyed = false;
+bool isTestingT = false;
+bool isTestingR = false;
+bool disabled = false;
 
 const int motorPin1 = 3;   // Motor 1 control pin
 const int motorPin2 = 5;   // Motor 1 control pin
@@ -90,7 +91,7 @@ void lightStop(){
 void moveForward() {
   analogWrite (motorPin1, 170);
   digitalWrite(motorPin2, LOW);
-  analogWrite (motorPin3, 200);
+  analogWrite (motorPin3, 210);
   digitalWrite(motorPin4, LOW);
 }
 void lightForward(){
@@ -160,8 +161,8 @@ void lightLeft(){
 // TurnAround also is TurnLeft
 void turnAround() {
   digitalWrite(motorPin1, LOW);
-  analogWrite (motorPin2, 150);
-  analogWrite (motorPin3, 113);
+  analogWrite (motorPin2, 170);
+  analogWrite (motorPin3, 130);
   digitalWrite(motorPin4, LOW);
 }
 void lightAround(){
@@ -170,6 +171,40 @@ void lightAround(){
   pixels.setPixelColor(3, pixels.Color(155, 255, 0)); //
   pixels.setPixelColor(0, pixels.Color(155, 255, 0)); //
   pixels.show();
+}
+
+void celebrate1(){
+  pixels.setPixelColor(1, pixels.Color(0,255,0));
+  pixels.setPixelColor(2, pixels.Color(0,0,0));
+  pixels.setPixelColor(3, pixels.Color(0,0,0));
+  pixels.setPixelColor(0, pixels.Color(0,0,0));
+  pixels.show();  
+}
+
+void celebrate2(){
+  pixels.setPixelColor(1, pixels.Color(0,0,0));
+  pixels.setPixelColor(2, pixels.Color(0,255,0));
+  pixels.setPixelColor(3, pixels.Color(0,0,0));
+  pixels.setPixelColor(0, pixels.Color(0,0,0));
+  pixels.show();
+}
+
+
+void celebrate3(){
+  pixels.setPixelColor(1, pixels.Color(0,0,0));
+  pixels.setPixelColor(2, pixels.Color(0,0,0));
+  pixels.setPixelColor(3, pixels.Color(0,255,0));
+  pixels.setPixelColor(0, pixels.Color(0,0,0));
+  pixels.show();  
+}
+
+
+void celebrate4(){
+  pixels.setPixelColor(1, pixels.Color(0,0,0));
+  pixels.setPixelColor(2, pixels.Color(0,0,0));
+  pixels.setPixelColor(3, pixels.Color(0,0,0));
+  pixels.setPixelColor(0, pixels.Color(0,255,0));
+  pixels.show();  
 }
 
 void loop() {
@@ -209,7 +244,14 @@ void loop() {
   
   
   if(raceEnded) {
-    lightStop();
+    celebrate1();
+    delay(300);
+    celebrate2();
+    delay(300);
+    celebrate3();
+    delay(300);
+    celebrate4();
+    delay(300);
     stopRobot();
   } else if(isBlack) {
     lightBackwards();
@@ -222,15 +264,18 @@ void loop() {
     endRace();
   } else if(isWhite) {
     isWhite = false;
-    lightRight();
+    lightForward();
+    moveForward();
+    delay(60);
+    lightTRight();
     turnRight();
-    delay(500);
-  }else if(isTesting && sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[2] < 900 && sensorValues[3] < 900 && sensorValues[4] < 900 && sensorValues[5] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900){
+    delay(470);
+  }else if(isTestingT && sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[2] < 900 && sensorValues[3] < 900 && sensorValues[4] < 900 && sensorValues[5] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900){
     isWhite = true;
-    isTesting = false;
-  } else if (isTesting && sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 && sensorValues[4] > 900 && sensorValues[5] > 900 && sensorValues[6] > 900 && sensorValues[7] > 900){ 
+    isTestingT = false;
+  } else if (isTestingT && sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 && sensorValues[4] > 900 && sensorValues[5] > 900 && sensorValues[6] > 900 && sensorValues[7] > 900){ 
     isBlack = true;
-    isTesting = false;
+    isTestingT = false;
   } else if (timerStarted && millis() - startTime <= 1350) {
     moveGripper(90);
     lightAround();
@@ -239,20 +284,24 @@ void loop() {
     lightForward();
     moveForward();
     delay(300);
-  } else if (raceStarted &&  (distance > 25 || distance < 21)) {
+  } else if (raceStarted) {
     if (sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 && sensorValues[4] > 900 && sensorValues[5] > 900 && sensorValues[6] > 900 && sensorValues[7] > 900) {
       lightForward();
       moveForward();
-      delay(350);
-      isTesting= true;
-    } else if (sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900){
+      delay(150);
+      isTestingT = true;
+    } else if (isTestingR && sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[2] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900 || isTestingR && sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[5] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900){
+      isTestingR = false;
+      isWhite = true;
+    } else if (isTestingR && sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 && sensorValues[4] > 900 && sensorValues[5] > 900 && sensorValues[6] > 900 && sensorValues[7] > 900){
+      isTestingR = false;
+      isBlack = true;
+    } else if (!isTestingR && sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 || sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900){
       moveForward();
       lightForward();
-      delay(350);
-      lightTRight();
-      turnRight();
-      delay(450);
-    } else if (sensorValues[3] > 900 || sensorValues[4] > 900) {
+      delay(150);
+      isTestingR = true;
+    } else if (!isTestingR && sensorValues[3] > 900 || !isTestingR && sensorValues[4] > 900) {
       lightForward();
       moveForward();
     } else if (sensorValues[5] > 900 || sensorValues[6] > 900 || sensorValues[7] > 900) {
@@ -268,13 +317,13 @@ void loop() {
       lightTRight();
       turnRight();
     }
-  } else if (!destroyed && distance > 21 && distance < 26) {
+  } else if (!disabled && distance > 21 && distance < 26) {
     delay(1000);
     startRace();
     startTimer();
     lightForward();
     moveForward();
-    destroyed = true;
+    disabled = true;
     delay(1300);
     Serial.print("Start");
   }

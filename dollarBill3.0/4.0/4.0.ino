@@ -29,8 +29,6 @@ const int sensorCount = 8; // Number of sensors in your analog line sensor
 const int sensorPins[sensorCount] = {A0, A1, A2, A3, A4, A5, A6, A7}; // Analog sensor pins
 int sensorValues[sensorCount]; // Array to store sensor values
 
-#define BLACK 900 // defines the treshold of when we say the colour sensor senses the colour black
-
 void setup() {
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
@@ -91,9 +89,9 @@ void lightStop(){
 }
 
 void moveForward() {
-  analogWrite (motorPin1, 190);
+  analogWrite (motorPin1, 170);
   digitalWrite(motorPin2, LOW);
-  analogWrite (motorPin3, 232);
+  analogWrite (motorPin3, 210);
   digitalWrite(motorPin4, LOW);
 }
 void lightForward(){
@@ -246,14 +244,16 @@ void loop() {
   
   
   if(raceEnded) {
-    lightStop();
-    delay(3000);
+    
+   
     celebrate1();
-    delay(200);
+    delay(300);
     celebrate2();
-    delay(200);
+    delay(300);
     celebrate3();
-    delay(200);
+    delay(300);
+    celebrate4();
+    delay(300);
     stopRobot();
   } else if(isBlack) {
     lightBackwards();
@@ -272,10 +272,10 @@ void loop() {
     lightTRight();
     turnRight();
     delay(470);
-  }else if(isTestingT && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+  }else if(isTestingT && sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[2] < 900 && sensorValues[3] < 900 && sensorValues[4] < 900 && sensorValues[5] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900){
     isWhite = true;
     isTestingT = false;
-  } else if (isTestingT && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){ 
+  } else if (isTestingT && sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 && sensorValues[4] > 900 && sensorValues[5] > 900 && sensorValues[6] > 900 && sensorValues[7] > 900){ 
     isBlack = true;
     isTestingT = false;
   } else if (timerStarted && millis() - startTime <= 1350) {
@@ -287,45 +287,46 @@ void loop() {
     moveForward();
     delay(300);
   } else if (raceStarted) {
-    if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK) {
+    if (sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 && sensorValues[4] > 900 && sensorValues[5] > 900 && sensorValues[6] > 900 && sensorValues[7] > 900) {
       lightForward();
       moveForward();
-      delay(130);
+      delay(150);
       isTestingT = true;
-    } else if (isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK || isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+    } else if (isTestingR && sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[2] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900 || isTestingR && sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[5] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900){
       isTestingR = false;
       isWhite = true;
-    } else if (isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){
+    } else if (isTestingR && sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 && sensorValues[4] > 900 && sensorValues[5] > 900 && sensorValues[6] > 900 && sensorValues[7] > 900){
       isTestingR = false;
       isBlack = true;
-    } else if (!isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK || sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK){
+    } else if (!isTestingR && sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900 && sensorValues[3] > 900 || sensorValues[0] > 900 && sensorValues[1] > 900 && sensorValues[2] > 900){
       moveForward();
       lightForward();
-      delay(120);
+      delay(150);
       isTestingR = true;
-    } else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
+    } else if (!isTestingR && sensorValues[3] > 900 || !isTestingR && sensorValues[4] > 900) {
       lightForward();
       moveForward();
-    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK) {
+    } else if (sensorValues[5] > 900 || sensorValues[6] > 900 || sensorValues[7] > 900) {
       lightLeft();
       moveLeft();
-    } else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK) {
+    } else if (sensorValues[0] > 900 || sensorValues[1] > 900 || sensorValues[2] > 900) {
       lightRight();
       moveRight();
-    } else if(sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+    } else if(sensorValues[0] < 900 && sensorValues[1] < 900 && sensorValues[2] < 900 && sensorValues[3] < 900 && sensorValues[4] < 900 && sensorValues[5] < 900 && sensorValues[6] < 900 && sensorValues[7] < 900){
      lightAround();
       turnAround();
     } else {
       lightTRight();
       turnRight();
-    } 
-  } else if (!disabled && distance > 23 && distance < 27) {
+    }
+  } else if (!disabled && distance > 21 && distance < 26) {
+    delay(1000);
     startRace();
     startTimer();
     lightForward();
     moveForward();
     disabled = true;
-    delay(900);
+    delay(1300);
     Serial.print("Start");
   }
 }
