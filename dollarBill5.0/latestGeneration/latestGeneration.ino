@@ -7,7 +7,7 @@ Adafruit_NeoPixel pixels(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 unsigned long startTime = 0;  // Variable to store the start time of the timer
 unsigned long timePassed = 0; //this happends as it never blink before. That's why blinking time did not pass
-unsigned long timeNow = millis(); //Now it holds the actual current time before blinking
+unsigned long timeNow = 0; //Now it holds the actual current time before blinking
 unsigned long delayNeverDie = 0; //this should be 0 as it does not have any delay before celebrate1 is to be performed
 int celebrationStep = 0; //We defined this on as it keeps track of following blinks;
 
@@ -182,34 +182,34 @@ void lightAround(){
 
 void celebrate1(){
   pixels.setPixelColor(1, pixels.Color(0,255,0));
-  pixels.setPixelColor(2, pixels.Color(0,0,0));
-  pixels.setPixelColor(3, pixels.Color(0,0,0));
-  pixels.setPixelColor(0, pixels.Color(0,0,0));
+  pixels.setPixelColor(2, pixels.Color(0,70,0));
+  pixels.setPixelColor(3, pixels.Color(0,70,0));
+  pixels.setPixelColor(0, pixels.Color(0,70,0));
   pixels.show();  
 }
 
 void celebrate2(){
-  pixels.setPixelColor(1, pixels.Color(0,0,0));
+  pixels.setPixelColor(1, pixels.Color(0,70,0));
   pixels.setPixelColor(2, pixels.Color(0,255,0));
-  pixels.setPixelColor(3, pixels.Color(0,0,0));
-  pixels.setPixelColor(0, pixels.Color(0,0,0));
+  pixels.setPixelColor(3, pixels.Color(0,70,0));
+  pixels.setPixelColor(0, pixels.Color(0,70,0));
   pixels.show();
 }
 
 
 void celebrate3(){
-  pixels.setPixelColor(1, pixels.Color(0,0,0));
-  pixels.setPixelColor(2, pixels.Color(0,0,0));
+  pixels.setPixelColor(1, pixels.Color(0,70,0));
+  pixels.setPixelColor(2, pixels.Color(0,70,0));
   pixels.setPixelColor(3, pixels.Color(0,255,0));
-  pixels.setPixelColor(0, pixels.Color(0,0,0));
+  pixels.setPixelColor(0, pixels.Color(0,70,0));
   pixels.show();  
 }
 
 
 void celebrate4(){
-  pixels.setPixelColor(1, pixels.Color(0,0,0));
-  pixels.setPixelColor(2, pixels.Color(0,0,0));
-  pixels.setPixelColor(3, pixels.Color(0,0,0));
+  pixels.setPixelColor(1, pixels.Color(0,70,0));
+  pixels.setPixelColor(2, pixels.Color(0,70,0));
+  pixels.setPixelColor(3, pixels.Color(0,70,0));
   pixels.setPixelColor(0, pixels.Color(0,255,0));
   pixels.show();  
 }
@@ -251,12 +251,13 @@ void loop() {
   
   
   if(raceEnded) {
+    timeNow = millis();
     if(timeNow - timePassed >= delayNeverDie){// This condition is satisfied as zero is greater or equal to 0 (delayNeverDie is initially set to 0)
       timePassed = timeNow; //the action is executed, and timePassed is updated to timeNow
      switch (celebrationStep){
       case 0:
         lightStop();
-        delayNeverDie = 3000;
+        stopRobot();
         break;
       case 1:
         celebrate1();
@@ -272,10 +273,10 @@ void loop() {
         break;
       case 4:
         celebrate4();
-        delayNeverDie = 200;
+        delayNeverDie = 100;
         break;
       case 5:
-        stopRobot();
+        celebrationStep = 0;
         break;
      //On the following loops, timePassed - timeNow will be the time elapsed since the last action
      //If this elapsed time is greater or equal to 0 to delayNeverDie, the condition is satisfied again
@@ -328,7 +329,7 @@ void loop() {
     } else if (!isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK || sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK){
       moveForward();
       lightForward();
-      delay(120);
+      delay(110);
       isTestingR = true;
     } else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
       lightForward();
