@@ -13,12 +13,12 @@ int celebrationStep = 0; //We defined this on as it keeps track of following bli
 
 bool timerStarted = false;    // Flag to indicate if the timer has started
 bool raceStarted = false;     // Flag to indicate if the robot should start or not
-bool raceEnded = false;
-bool isWhite = false;
-bool isBlack = false;
-bool isTestingT = false;
-bool isTestingR = false;
-bool disabled = false;
+bool raceEnded = false;  //Flag to indicate when the race is done
+bool isWhite = false;    //Flag to track the color of the track is white
+bool isBlack = false;    //Flag to track the color of the track is black
+bool isTestingT = false; //Flag to track where is the T turn (case for both left and right turn)
+bool isTestingR = false; //Flag to track where is the R turn (right turn)
+bool disabled = false;  //Flag to know that the robot performs only once
 
 const int motorPin1 = 3;   // Motor 1 control pin
 const int motorPin2 = 5;   // Motor 1 control pin
@@ -53,7 +53,149 @@ void setup() {
   pixels.show();   // Initialize all pixels to 'off'
   pixels.setBrightness(50);  // Set NeoPixel brightness
 }
+void loop() {
+  // Read sensor values
+  for (int i = 0; i < sensorCount; ++i) {
+    sensorValues[i] = analogRead(sensorPins[i]);
+  }
 
+  // Triggering the sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Reading the pulse duration from Echo pin
+  long duration = pulseIn(echoPin, HIGH);
+
+  float theSpeedOfSound = 0.034; //centimeters per microsecond
+  // Calculating distance in centimeters
+  int distance = duration * theSpeedOfSound / 2; //We divided it by 2 
+  //because the signal has travelled to the target and back, 
+  //so the distance is the total round-trip distance
+
+  // Print sensor values and distance to the Serial Monitor
+  Serial.print("Sensor Values: ");
+  for (int i = 0; i < sensorCount; ++i) {
+    Serial.print(sensorValues[i]);
+    Serial.print(" ");
+  }
+  
+  Serial.println();
+  
+  Serial.print("Distance:");
+  Serial.print(distance);
+  Serial.print("cm");
+  
+  
+  if(raceEnded) {
+    timeNow = millis();
+    if(timeNow - timePassed >= delayNeverDie){// This condition is satisfied as zero is greater or equal to 0 (delayNeverDie is initially set to 0)
+      timePassed = timeNow; //the action is executed, and timePassed is updated to timeNow
+     switch (celebrationStep){
+      case 0:
+        lightStop();
+        stopRobot();
+        break;
+      case 1:
+        celebrate1();
+        delayNeverDie = 200;
+        break;
+      case 2:
+        celebrate2();
+        delayNeverDie = 200;
+        break;
+      case 3:
+        celebrate3();
+        delayNeverDie = 200;
+        break;
+      case 4:
+        celebrate4();
+        delayNeverDie = 100;
+        break;
+      case 5:
+        celebrationStep = 0;
+        break;
+     //On the following loops, timePassed - timeNow will be the time elapsed since the last action
+     //If this elapsed time is greater or equal to 0 to delayNeverDie, the condition is satisfied again
+     }
+    celebrationStep++;//replicate the series of celebrating
+   }
+  } else if(isBlack) { //if this condition is satisfied, the robot will drop cargo
+    lightBackwards();
+    moveBackwards();
+    delay(325);
+    moveGripper(130);
+    lightBackwards();
+    moveBackwards();
+    delay(1000);
+    endRace();
+  } else if(isWhite) { //if this condition is satisfied, the robot will move on to turn left or right
+    isWhite = false; //We set it to false so that this condition will reset 
+    lightForward();
+    moveForward();
+    delay(60);
+    lightTRight();
+    turnRight();
+    delay(470);
+  }else if(isTestingT && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+    isWhite = true; // This condition is satisfied if the robot on the white surface (finish line)
+    isTestingT = false;
+  } else if (isTestingT && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){ 
+    isBlack = true; // This condition is satisfied if the robot is on the black surface (right turn)
+    isTestingT = false;
+  } else if (timerStarted && millis() - startTime <= 1350) {
+    moveGripper(90); // This condition is satisfied if the robot see a cargo and pick up
+    lightAround();
+    turnAround(); // This one is turn left, not turn around
+    delay(350);
+    lightForward();
+    moveForward();
+    delay(300);
+  } else if (raceStarted) {
+    if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK) {
+      lightForward(); // this condition is satisfied when the robot is grabbing cargo then it start to solve the maze
+      moveForward();
+      delay(130);
+      isTestingT = true;
+    } else if (isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK || isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+      isTestingR = false; //The condition is satisfied if the robot is on the R rightTurn, it should turn right
+      isWhite = true;
+    } else if (isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){
+      isTestingR = false; //The condition is satisfied if the robot is on the testing to see whether its the finishline or not, if it is, drop cargo
+      isBlack = true;
+    } else if (!isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK || sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK){
+      moveForward(); 
+      lightForward();
+      delay(110);
+      isTestingR = true;
+    } else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
+      lightForward();// The condition is met if the robot is on the track and does not have any turn right on its head
+      moveForward();
+    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK) {
+      lightLeft();//This condition is met if the robot is slightly on the right side
+      moveLeft();
+    } else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK) {
+      lightRight();//This condition is met if the robot is slightly on the left side
+      moveRight();
+    } else if(sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+     lightAround(); //This condition is met if the robot goes to the last line
+      turnAround();
+    } else {
+      lightTRight();// The rest of others should always turn right
+      turnRight();
+    } 
+  } else if (!disabled && distance > 23 && distance < 27) {
+    startRace();// This condition is met if the robot did not start yet until it see cargo right in front of their eyes
+    startTimer();
+    lightForward();
+    moveForward();
+    disabled = true;
+    delay(900);
+    Serial.print("Start");
+  }
+}
 void startRace() {
   //Start the race only if it hasn't been started already
   if (!raceStarted) {
@@ -212,148 +354,4 @@ void celebrate4(){
   pixels.setPixelColor(3, pixels.Color(0,70,0));
   pixels.setPixelColor(0, pixels.Color(0,255,0));
   pixels.show();  
-}
-
-void loop() {
-  // Read sensor values
-  for (int i = 0; i < sensorCount; ++i) {
-    sensorValues[i] = analogRead(sensorPins[i]);
-  }
-
-  // Triggering the sensor
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-
-  // Reading the pulse duration from Echo pin
-  long duration = pulseIn(echoPin, HIGH);
-
-  float theSpeedOfSound = 0.034; //centimeters per microsecond
-  // Calculating distance in centimeters
-  int distance = duration * theSpeedOfSound / 2; //We divided it by 2 
-  //because the signal has travelled to the target and back, 
-  //so the distance is the total round-trip distance
-
-  // Print sensor values and distance to the Serial Monitor
-  Serial.print("Sensor Values: ");
-  for (int i = 0; i < sensorCount; ++i) {
-    Serial.print(sensorValues[i]);
-    Serial.print(" ");
-  }
-  
-  Serial.println();
-  
-  Serial.print("Distance:");
-  Serial.print(distance);
-  Serial.print("cm");
-  
-  
-  if(raceEnded) {
-    timeNow = millis();
-    if(timeNow - timePassed >= delayNeverDie){// This condition is satisfied as zero is greater or equal to 0 (delayNeverDie is initially set to 0)
-      timePassed = timeNow; //the action is executed, and timePassed is updated to timeNow
-     switch (celebrationStep){
-      case 0:
-        lightStop();
-        stopRobot();
-        break;
-      case 1:
-        celebrate1();
-        delayNeverDie = 200;
-        break;
-      case 2:
-        celebrate2();
-        delayNeverDie = 200;
-        break;
-      case 3:
-        celebrate3();
-        delayNeverDie = 200;
-        break;
-      case 4:
-        celebrate4();
-        delayNeverDie = 100;
-        break;
-      case 5:
-        celebrationStep = 0;
-        break;
-     //On the following loops, timePassed - timeNow will be the time elapsed since the last action
-     //If this elapsed time is greater or equal to 0 to delayNeverDie, the condition is satisfied again
-     }
-    celebrationStep++;
-   }
-  } else if(isBlack) {
-    lightBackwards();
-    moveBackwards();
-    delay(325);
-    moveGripper(130);
-    lightBackwards();
-    moveBackwards();
-    delay(1000);
-    endRace();
-  } else if(isWhite) {
-    isWhite = false;
-    lightForward();
-    moveForward();
-    delay(60);
-    lightTRight();
-    turnRight();
-    delay(470);
-  }else if(isTestingT && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
-    isWhite = true;
-    isTestingT = false;
-  } else if (isTestingT && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){ 
-    isBlack = true;
-    isTestingT = false;
-  } else if (timerStarted && millis() - startTime <= 1350) {
-    moveGripper(90);
-    lightAround();
-    turnAround();
-    delay(350);
-    lightForward();
-    moveForward();
-    delay(300);
-  } else if (raceStarted) {
-    if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK) {
-      lightForward();
-      moveForward();
-      delay(130);
-      isTestingT = true;
-    } else if (isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK || isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
-      isTestingR = false;
-      isWhite = true;
-    } else if (isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){
-      isTestingR = false;
-      isBlack = true;
-    } else if (!isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK || sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK){
-      moveForward();
-      lightForward();
-      delay(110);
-      isTestingR = true;
-    } else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
-      lightForward();
-      moveForward();
-    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK) {
-      lightLeft();
-      moveLeft();
-    } else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK) {
-      lightRight();
-      moveRight();
-    } else if(sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
-     lightAround();
-      turnAround();
-    } else {
-      lightTRight();
-      turnRight();
-    } 
-  } else if (!disabled && distance > 23 && distance < 27) {
-    startRace();
-    startTimer();
-    lightForward();
-    moveForward();
-    disabled = true;
-    delay(900);
-    Serial.print("Start");
-  }
 }
