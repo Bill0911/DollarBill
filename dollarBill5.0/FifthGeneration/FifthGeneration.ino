@@ -114,7 +114,7 @@ void loop() {
         celebrate4();
         delayNeverDie = 100;
         break;
-      case 5:
+      case 5: 
         celebrationStep = 0;
         break;
      //On the following loops, timePassed - timeNow will be the time elapsed since the last action
@@ -135,10 +135,10 @@ void loop() {
     isWhite = false; //We set it to false so that this condition will reset 
     lightForward();
     moveForward();
-    delay(60);
+    delay(30);
     lightTRight();
     turnRight();
-    delay(470);
+    delay(460);
   }else if(isTestingT && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
     isWhite = true; // This condition is satisfied if the robot on the white surface (finish line)
     isTestingT = false;
@@ -173,13 +173,13 @@ void loop() {
     } else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
       lightForward();// The condition is met if the robot is on the track and does not have any turn right on its head
       moveForward();
-    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK) {
+    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK && sensorValues[7] > BLACK) {
       lightLeft();//This condition is met if the robot is slightly on the right side
       moveLeft();
     } else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK) {
       lightRight();//This condition is met if the robot is slightly on the left side
       moveRight();
-    } else if(sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+    } else if(sensorValues[0] < BLACK || sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
      lightAround(); //This condition is met if the robot goes to the last line
       turnAround();
     } else {
@@ -238,9 +238,9 @@ void lightStop(){
 }
 
 void moveForward() {
-  analogWrite (motorPin1, 190);
+  analogWrite (motorPin1, 200);
   digitalWrite(motorPin2, LOW);
-  analogWrite (motorPin3, 232);
+  analogWrite (motorPin3, 242);
   digitalWrite(motorPin4, LOW);
 }
 void lightForward(){
