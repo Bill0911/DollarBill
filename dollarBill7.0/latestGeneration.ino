@@ -8,21 +8,19 @@
 
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
-unsigned long startTime = 0;  // Variable to store the start time of the timer
+unsigned long timeStarted = 0;  // Variable to store the start time of the timer
 unsigned long timePassed = 0; //this happends as it never blink before. That's why blinking time did not pass
 unsigned long timeNow = 0; //Now it holds the actual current time before blinking
-unsigned long delayNeverDie = 0; //this should be 0 as it does not have any delay before celebrate1 is to be performed
+unsigned long timeCelebration = 0; //this should be 0 as it does not have any delay before celebrate1 is to be performed
 
 bool timerStarted = false;    // Flag to indicate if the timer has started
 bool raceStarted = false;     // Flag to indicate if the robot should start or not
-bool raceEnded = false;
-bool isWhite = false;
-bool isBlack = false;
-bool isTestingT = false;
-bool isTestingR = false;
-bool isTurnLeft = false;
-bool disabled = false;
-bool isNotError = false;
+bool raceEnded = false;       // Flag to indicate if the robot should end the race
+bool isWhite = false;         // Flag to indicate if the robot after having moved forward from a T turn or an L turn not all sensorvalues or none of the sensorvalues were black 
+bool isBlack = false;         // Flag to indicate if the robot senses that it at the end of track because all sensorvalues are consistantly black
+bool isTestingT = false;      // Flag to indicate if the robot goes to the right turn (T turn)
+bool isTestingR = false;      // Flag to indicate if the robot goes to the right turn (R turn or called L turn)
+
 
 const int motorPin1 = 3;   // Motor 1 control pin
 const int motorPin2 = 5;   // Motor 1 control pin
@@ -37,19 +35,16 @@ const int servoPin = 10; // Servo control pin
 const int sensorCount = 8; // Number of sensors in your analog line sensor
 const int sensorPins[sensorCount] = {A0, A1, A2, A3, A4, A5, A6, A7}; // Analog sensor pins
 int sensorValues[sensorCount]; // Array to store sensor values
-int whiteValues[sensorCount];
-int blackValues[sensorCount];
-int thresholdValues[sensorCount];
 
 int celebrationStep = 0; //We defined this on as it keeps track of following blinks;
 
 #define BLACK 900 // defines the threshold of when we say the colour sensor senses the colour black
 
 void setup() {
-  pinMode(motorPin1, OUTPUT);
-  pinMode(motorPin2, OUTPUT);
-  pinMode(motorPin3, OUTPUT);
-  pinMode(motorPin4, OUTPUT);
+  pinMode(motorPin1, OUTPUT); //left-wheel forward
+  pinMode(motorPin2, OUTPUT); //left-wheel backward
+  pinMode(motorPin3, OUTPUT); //right-wheel forward
+  pinMode(motorPin4, OUTPUT); //right-wheel backward
   
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
@@ -63,17 +58,13 @@ void setup() {
   pixels.begin();  // Initialize NeoPixels
   pixels.show();   // Initialize all pixels to 'off'
   pixels.setBrightness(50);  // Set NeoPixel brightness
-}
 
-void loop() {
-  // Read sensor values
-  for (int i = 0; i < sensorCount; ++i) {
-    sensorValues[i] = analogRead(sensorPins[i]);
-  }
-
-  // Triggering the sensor
+  int distance_count = 0; 
+  while (distance_count < 10)  // This while loops makes sure the robot does not get tricked into starting the line meze by errors and forces the robot to stop using the ultrasonic sensor after the start
+  {
+    // Triggering the sensor
   digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
+  delay(100);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
@@ -81,119 +72,144 @@ void loop() {
   // Reading the pulse duration from Echo pin
   long duration = pulseIn(echoPin, HIGH);
 
-  float theSpeedOfSound = 0.034; //centimeters per microsecond
   // Calculating distance in centimeters
-  int distance = duration * theSpeedOfSound / 2; //We divided it by 2 
-  //because the signal has travelled to the target and back, 
-  //so the distance is the total round-trip distance
-  
+  int distance = duration * 0.034 / 2; // We divided the duration multiplied by the speed of sound by 2 
+  //because the signal travels to the target and back meaning it went over the distance twice. 
+  if (distance > 23 && distance < 27) {// everytime we meassure a distance in between 23 and 27 the counter goes up.
+    distance_count++;
+    continue;
+    }
+  }// here we start the race and move forward up until where the black square is
+  delay(1000);
+  startRace();
+  startTimer();
+  moveForward();
+  delay(900);
+ }
+
+//================[Loop]=======================//
+void loop() {
+  // Read sensor values of all 8 line sensors
+  for (int i = 0; i < sensorCount; ++i) {
+    sensorValues[i] = analogRead(sensorPins[i]);
+  }
+ 
   if(raceEnded) {
     timeNow = millis();
-    if(timeNow - timePassed >= delayNeverDie){// This condition is satisfied as zero is greater or equal to 0 (delayNeverDie is initially set to 0)
+    if(timeNow - timePassed >= timeCelebration){// This condition is satisfied as zero is greater or equal to 0 (delayNeverDie is initially set to 0)
       timePassed = timeNow; //the action is executed, and timePassed is updated to timeNow
      switch (celebrationStep){
       case 0:
         lightStop();
-        delayNeverDie = 2000;
+        timeCelebration = 2000;
         break;
       case 1:
         celebrate1();
-        delayNeverDie = 200;
+        timeCelebration = 200;
         break;
       case 2:
         celebrate2();
-        delayNeverDie = 200;
+        timeCelebration = 200;
         break;
       case 3:
         celebrate3();
-        delayNeverDie = 200;
+        timeCelebration = 200;
         break;
       case 4:
         celebrate4();
-        delayNeverDie = 100;
+        timeCelebration = 100;
         break;
       case 5:
         stopRobot();
         celebrationStep = 0;
         break;
      //On the following loops, timePassed - timeNow will be the time elapsed since the last action
-     //If this elapsed time is greater or equal to 0 to delayNeverDie, the condition is satisfied again
+     //If this elapsed time is greater or equal to 0 to timeCelebration, the condition is satisfied again
      }
     celebrationStep++;
    }
-  } else if(isBlack) {
+  } else if(isBlack) {//drops of the object and moves out of the way of the last robot
     moveBackwards();
-    delay(450);
+    delay(250);
     moveGripper(130);
     moveBackwards();
     endRace();
-  } else if(isWhite) {
+  }
+  else if(isWhite) {// turn right until atleast one of the right most two line sensors senses black
     if(sensorValues[0] > BLACK || sensorValues[1] > BLACK){  
     isWhite = false;
     }else if(sensorValues[0] < BLACK && sensorValues[1] < BLACK){
     turnRight();
     }
-  }else if(isTestingT){
+  }
+  else if(isTestingT){
     if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){
+      // if it the sensors still sense that every sensor is black that means we reached the end of the track otherwise we turn right
       isBlack = true;
       isTestingT= false;
     } else{
       isWhite = true;
       isTestingT = false;
     }
-  } else if (timerStarted && millis() - startTime <= 1350) {
+  } 
+  else if (timerStarted && millis() - timeStarted <= 1350) {
+    // after having moved forward towards the square we close the gripper and turn left
     moveGripper(90);
     turnAround();
-  } else if (raceStarted) {
+  } 
+  else if (raceStarted) {// only do the maze solving logic when the race has been started
     if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK) {
+      //if we see that all values are black move forward to see if it a T turn or the ending square to stop the race or turn right accordingly
       moveForward();
-      delay(120);// changed new delay
+      delay(120);
       isTestingT = true;
-    } else if (isTestingR){
+    } 
+    else if (isTestingR){
       if(sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){
+        // if it the sensors sense that every sensor is black that means we reached the end of the track otherwise we turn right
         isBlack = true;
         isTestingR = false;
       }else{
-      isTestingR = false;
-      isWhite = true;
-      turnRight();
-      delay(100);
+        isTestingR = false;
+        isWhite = true;
+        turnRight();
+        delay(100);
       }
-    } else if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK ||
-    sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK){
+    } 
+    else if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK || sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK){
+      //if we see that all values are black move forward to see if it an R turn () or the ending square to stop the race or turn right accordingly
       moveForward();
       delay(120);
       isTestingR = true;
-    } else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
+    } 
+    else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
+      // if 3 or 4 sense a black line move forward
       moveForward();
-    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK){ 
+    } 
+    else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK){ 
+      //if 5, 6 or 7 sense a black line while 3 or 4 don't sense a black line, move left
       moveLeft();
-    } else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK){
+    } 
+    else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK){
+      // if sensor 0, 1 or 2 sense a black line while sensor 5, 6, 7, 3, or 4 dont, move right
       moveRight();
-    } else {
+    } 
+    else {
+      //otherwise turnaround to the left( so that it can make a 90 degree turn to the left but also a 180 to turn around
+      //this should only happen when all the sensors sense no black line
       turnAround();
     } 
-  } else if (!disabled && isNotError && distance > 23 && distance < 26) {
-    delay(1000);
-    startRace();
-    startTimer();
-    moveForward();
-    disabled = true;
-    isTurnLeft = true;
-    delay(900);
-    Serial.print("Start");
-  } else if (!disabled && !isNotError && distance > 23 && distance < 26){
-    isNotError = true;
-    delay(1000);
-  }
+  } 
 }
 
 
-//==========[LaiLaiLaiLaLai]==============================================================//
-//==========[Functions]===================================================================//
 
+
+
+//==========[Basic Functions]=============================================================//
 
 void startRace() {
+  //Start the race only if it hasn't been started
   if (!raceStarted) {
     raceStarted = true;
   }
@@ -204,17 +220,19 @@ void endRace() {
 }
 
 void startTimer() {
+  // Start the timer only if it hasn't been started already
   if (!timerStarted) {
-    startTime = millis();
+    timeStarted = millis();
     timerStarted = true;
   }
 }
 
-//Activated the gripper
+//Activate the gripper
 void moveGripper(int angle) {
   int pwmValue = map(angle, 0, 180, 0, 255);
   analogWrite(servoPin, pwmValue);
 }
+
 
 void stopRobot() {
   digitalWrite(motorPin1, LOW);
@@ -222,6 +240,7 @@ void stopRobot() {
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, LOW);
 }
+//keep in mind we use GRB and not RGB
 void lightStop(){
   pixels.setPixelColor(1, pixels.Color(0, 255, 0)); // 
   pixels.setPixelColor(2, pixels.Color(0, 255, 0)); // 
@@ -266,7 +285,7 @@ void turnRight() {
 void moveRight() {
   analogWrite (motorPin1, 225);//
   digitalWrite(motorPin2, LOW);//
-  analogWrite (motorPin3, 150);//
+  analogWrite (motorPin3, 110);//
   digitalWrite(motorPin4, LOW);//
   pixels.clear();
   pixels.setPixelColor(2, pixels.Color(155, 255, 0)); // 
@@ -274,7 +293,7 @@ void moveRight() {
 }
 
 void moveLeft() {
-  analogWrite (motorPin1, 150);//
+  analogWrite (motorPin1, 110);//
   digitalWrite(motorPin2, LOW);//
   analogWrite (motorPin3, 230);//
   digitalWrite(motorPin4, LOW);//
@@ -327,73 +346,4 @@ void celebrate4(){
   pixels.setPixelColor(3, pixels.Color(0,70,0 ));
   pixels.setPixelColor(0, pixels.Color(0,255,0));
   pixels.show();  
-}
-
-void calibrateSensors() {
-  Serial.println("Calibrating sensors...");
-  Serial.println("Move the robot over black and white lines...");
-
-  // Initialize min and max arrays
-  int minValues[numSensors];
-  int maxValues[numSensors];
-  for (int i = 0; i < numSensors; i++) {
-    minValues[i] = 1023;
-    maxValues[i] = 0;
-  }
-
-  // Read sensor values while moving over lines
-  unsigned long startTime = millis();
-  while (millis() - startTime < 5000) {  // Calibration for 5 seconds
-    readSensorValues();
-    for (int i = 0; i < numSensors; i++) {
-      // Update min and max values
-      if (sensorValues[i] < minValues[i]) {
-        minValues[i] = sensorValues[i];
-      }
-      if (sensorValues[i] > maxValues[i]) {
-        maxValues[i] = sensorValues[i];
-      }
-    }
-  }
-
-  // Calculate black and white values based on min and max
-  for (int i = 0; i < numSensors; i++) {
-    blackValues[i] = minValues[i];
-    whiteValues[i] = maxValues[i];
-    // Calculate threshold value
-    thresholdValues[i] = (blackValues[i] + whiteValues[i]) / 2;
-  }
-
-  Serial.println("Calibration complete.");
-}
-
-void readSensorValues() {
-  // Read analog sensor values
-  for (int i = 0; i < numSensors; i++) {
-    sensorValues[i] = analogRead(sensorPins[i]);
-  }
-}
-
-void printCalibratedValues() {
-  // Print calibrated values for debugging
-  Serial.println("Calibrated Values:");
-  Serial.print("Black Values: ");
-  for (int i = 0; i < numSensors; i++) {
-    Serial.print(blackValues[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-  Serial.print("White Values: ");
-  for (int i = 0; i < numSensors; i++) {
-    Serial.print(whiteValues[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-  Serial.print("Threshold Values: ");
-  for (int i = 0; i < numSensors; i++) {
-    Serial.print(thresholdValues[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-}
-
+}                                                                                                                                                                                                     

@@ -13,12 +13,13 @@ int celebrationStep = 0; //We defined this on as it keeps track of following bli
 
 bool timerStarted = false;    // Flag to indicate if the timer has started
 bool raceStarted = false;     // Flag to indicate if the robot should start or not
-bool raceEnded = false;  //Flag to indicate when the race is done
-bool isWhite = false;    //Flag to track the color of the track is white
-bool isBlack = false;    //Flag to track the color of the track is black
-bool isTestingT = false; //Flag to track where is the T turn (case for both left and right turn)
-bool isTestingR = false; //Flag to track where is the R turn (right turn)
-bool disabled = false;  //Flag to know that the robot performs only once
+bool raceEnded = false;
+bool isWhite = false;
+bool isBlack = false;
+bool isTestingT = false;
+bool isTestingR = false;
+bool isTurnLeft = false;
+bool disabled = false;
 
 const int motorPin1 = 3;   // Motor 1 control pin
 const int motorPin2 = 5;   // Motor 1 control pin
@@ -53,6 +54,7 @@ void setup() {
   pixels.show();   // Initialize all pixels to 'off'
   pixels.setBrightness(50);  // Set NeoPixel brightness
 }
+
 void loop() {
   // Read sensor values
   for (int i = 0; i < sensorCount; ++i) {
@@ -96,7 +98,7 @@ void loop() {
      switch (celebrationStep){
       case 0:
         lightStop();
-        stopRobot();
+        delayNeverDie = 2000;
         break;
       case 1:
         celebrate1();
@@ -114,88 +116,73 @@ void loop() {
         celebrate4();
         delayNeverDie = 100;
         break;
-      case 5: 
+      case 5:
+        stopRobot();
         celebrationStep = 0;
         break;
      //On the following loops, timePassed - timeNow will be the time elapsed since the last action
      //If this elapsed time is greater or equal to 0 to delayNeverDie, the condition is satisfied again
      }
-    celebrationStep++;//replicate the series of celebrating
+    celebrationStep++;
    }
-  } else if(isBlack) { //if this condition is satisfied, the robot will drop cargo
-    lightBackwards();
-    moveBackwards();
-    delay(325);
+  } else if(isBlack) {
     moveGripper(130);
-    lightBackwards();
     moveBackwards();
-    delay(1000);
+    delay(200);
     endRace();
-  } else if(isWhite) { //if this condition is satisfied, the robot will move on to turn left or right
-    isWhite = false; //We set it to false so that this condition will reset 
-    lightForward();
-    moveForward();
-    delay(30);
-    lightTRight();
+  } else if(isWhite) {
+    if(sensorValues[0] > BLACK || sensorValues[1] > BLACK){  
+    isWhite = false;
+    }else if(sensorValues[0] < BLACK && sensorValues[1] < BLACK){
     turnRight();
-    delay(460);
-  }else if(isTestingT && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
-    isWhite = true; // This condition is satisfied if the robot on the white surface (finish line)
+    }
+  } else if(isTestingT && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
+    isWhite = true;
     isTestingT = false;
   } else if (isTestingT && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){ 
-    isBlack = true; // This condition is satisfied if the robot is on the black surface (right turn)
+    isBlack = true;
     isTestingT = false;
   } else if (timerStarted && millis() - startTime <= 1350) {
-    moveGripper(90); // This condition is satisfied if the robot see a cargo and pick up
-    lightAround();
-    turnAround(); // This one is turn left, not turn around
-    delay(350);
-    lightForward();
-    moveForward();
-    delay(300);
+    moveGripper(90);
+    turnAround();
   } else if (raceStarted) {
     if (sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK) {
-      lightForward(); // this condition is satisfied when the robot is grabbing cargo then it start to solve the maze
       moveForward();
-      delay(130);
+      delay(120);// changed new delay
       isTestingT = true;
     } else if (isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK || isTestingR && sensorValues[0] < BLACK && sensorValues[1] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
-      isTestingR = false; //The condition is satisfied if the robot is on the R rightTurn, it should turn right
+      isTestingR = false;
       isWhite = true;
+      turnRight();
+      delay(100);
     } else if (isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK && sensorValues[4] > BLACK && sensorValues[5] > BLACK && sensorValues[6] > BLACK && sensorValues[7] > BLACK){
-      isTestingR = false; //The condition is satisfied if the robot is on the testing to see whether its the finishline or not, if it is, drop cargo
+      isTestingR = false;
       isBlack = true;
     } else if (!isTestingR && sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK && sensorValues[3] > BLACK || sensorValues[0] > BLACK && sensorValues[1] > BLACK && sensorValues[2] > BLACK){
-      moveForward(); 
-      lightForward();
-      delay(110);
+      moveForward();
+      delay(120);
       isTestingR = true;
     } else if (!isTestingR && sensorValues[3] > BLACK || !isTestingR && sensorValues[4] > BLACK) {
-      lightForward();// The condition is met if the robot is on the track and does not have any turn right on its head
       moveForward();
-    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK && sensorValues[7] > BLACK) {
-      lightLeft();//This condition is met if the robot is slightly on the right side
+    } else if (sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK){ //{sensorValues[5] > BLACK || sensorValues[6] > BLACK || sensorValues[7] > BLACK
       moveLeft();
-    } else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK) {
-      lightRight();//This condition is met if the robot is slightly on the left side
+    } else if (sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK){ //{sensorValues[0] > BLACK || sensorValues[1] > BLACK || sensorValues[2] > BLACK
       moveRight();
-    } else if(sensorValues[0] < BLACK || sensorValues[1] < BLACK && sensorValues[2] < BLACK && sensorValues[3] < BLACK && sensorValues[4] < BLACK && sensorValues[5] < BLACK && sensorValues[6] < BLACK && sensorValues[7] < BLACK){
-     lightAround(); //This condition is met if the robot goes to the last line
-      turnAround();
     } else {
-      lightTRight();// The rest of others should always turn right
-      turnRight();
+      turnAround();
+      isTurnLeft = false;
     } 
   } else if (!disabled && distance > 23 && distance < 27) {
-    startRace();// This condition is met if the robot did not start yet until it see cargo right in front of their eyes
+    startRace();
     startTimer();
-    lightForward();
     moveForward();
     disabled = true;
+    isTurnLeft = true;
     delay(900);
     Serial.print("Start");
   }
 }
+
 void startRace() {
   //Start the race only if it hasn't been started already
   if (!raceStarted) {
@@ -238,12 +225,10 @@ void lightStop(){
 }
 
 void moveForward() {
-  analogWrite (motorPin1, 200);
+  analogWrite (motorPin1, 209);
   digitalWrite(motorPin2, LOW);
-  analogWrite (motorPin3, 242);
+  analogWrite (motorPin3, 250);
   digitalWrite(motorPin4, LOW);
-}
-void lightForward(){
   pixels.setPixelColor(1, pixels.Color(0, 0, 0)); // 
   pixels.setPixelColor(2, pixels.Color(155, 255, 0)); // 
   pixels.setPixelColor(3, pixels.Color(155, 255, 0)); //
@@ -256,8 +241,6 @@ void moveBackwards() {
   analogWrite(motorPin2, 170);
   digitalWrite(motorPin3, LOW);
   analogWrite(motorPin4, 180);
-}
-void lightBackwards(){
   pixels.setPixelColor(1, pixels.Color(0, 255, 0)); //
   pixels.setPixelColor(2, pixels.Color(0, 0, 0)); // 
   pixels.setPixelColor(3, pixels.Color(0, 0, 0)); // 
@@ -266,12 +249,10 @@ void lightBackwards(){
 }
 
 void turnRight() {
-  analogWrite (motorPin1, 130);
+  analogWrite (motorPin1, 120);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
-  digitalWrite(motorPin4, 100);
-}
-void lightTRight(){
+  analogWrite (motorPin4, 160);
   pixels.setPixelColor(1, pixels.Color(155, 255, 0)); // 
   pixels.setPixelColor(2, pixels.Color(155, 255, 0)); //
   pixels.setPixelColor(3, pixels.Color(0, 0, 0)); //  
@@ -284,8 +265,6 @@ void moveRight() {
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, LOW);
-}
-void lightRight(){
   pixels.setPixelColor(1, pixels.Color(0, 0, 0)); // 
   pixels.setPixelColor(2, pixels.Color(155, 255, 0)); // 
   pixels.setPixelColor(3, pixels.Color(0, 0, 0)); //
@@ -298,8 +277,6 @@ void moveLeft() {
   digitalWrite(motorPin2, LOW);
   analogWrite (motorPin3, 150);
   digitalWrite(motorPin4, LOW);
-}
-void lightLeft(){
   pixels.setPixelColor(1, pixels.Color(0, 0, 0)); // 
   pixels.setPixelColor(2, pixels.Color(0, 0, 0)); // 
   pixels.setPixelColor(3, pixels.Color(155, 255, 0)); //
@@ -313,8 +290,6 @@ void turnAround() {
   analogWrite (motorPin2, 170);
   analogWrite (motorPin3, 130);
   digitalWrite(motorPin4, LOW);
-}
-void lightAround(){
   pixels.setPixelColor(1, pixels.Color(0, 0, 0)); //
   pixels.setPixelColor(2, pixels.Color(0, 0, 0)); // 
   pixels.setPixelColor(3, pixels.Color(155, 255, 0)); //
